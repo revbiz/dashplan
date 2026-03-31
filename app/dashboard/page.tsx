@@ -476,49 +476,89 @@ export default function DashboardPage() {
           ) : null}
 
           {data && data.ok ? (
-            <div className='mt-4 overflow-auto rounded border bg-white'>
-              <table className='w-full min-w-[520px] text-left text-sm'>
-                <thead className='border-b bg-neutral-100'>
-                  <tr>
-                    <th className='px-3 py-2 font-medium'>NoteType</th>
-                    <th className='px-3 py-2 font-medium'>Count</th>
-                    <th className='px-3 py-2 font-medium'>Hours</th>
-                    <th className='px-3 py-2 font-medium'>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.rows.map((r) => (
-                    <tr key={r.noteType} className='border-b last:border-b-0'>
-                      <td className='px-3 py-2'>{r.noteType}</td>
-                      <td className='px-3 py-2 tabular-nums'>
-                        {r.count.toLocaleString()}
-                      </td>
-                      <td className='px-3 py-2 tabular-nums'>
-                        {formatNumber(r.totalHours, decimals)}
-                      </td>
-                      <td className='px-3 py-2 tabular-nums'>
-                        {formatNumber(r.totalAmount, 2)}
-                      </td>
-                    </tr>
-                  ))}
+            <>
+              <div className='mt-4 space-y-2 sm:hidden'>
+                {data.rows.map((r) => (
+                  <div key={`nt-m-${r.noteType}`} className='rounded border bg-white p-3'>
+                    <div className='truncate text-sm font-medium text-neutral-900'>
+                      {r.noteType}
+                    </div>
+                    <div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-700'>
+                      <div className='tabular-nums'>
+                        <span className='text-neutral-500'>Cnt</span> {r.count.toLocaleString()}
+                      </div>
+                      <div className='tabular-nums'>
+                        <span className='text-neutral-500'>Hrs</span> {formatNumber(r.totalHours, decimals)}
+                      </div>
+                      <div className='tabular-nums'>
+                        <span className='text-neutral-500'>Amt</span> {formatNumber(r.totalAmount, 2)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
 
-                  {totals ? (
-                    <tr className='bg-neutral-50'>
-                      <td className='px-3 py-2 font-medium'>Totals</td>
-                      <td className='px-3 py-2 font-medium tabular-nums'>
-                        {totals.totalCount.toLocaleString()}
-                      </td>
-                      <td className='px-3 py-2 font-medium tabular-nums'>
-                        {formatNumber(totals.totalHours, decimals)}
-                      </td>
-                      <td className='px-3 py-2 font-medium tabular-nums'>
-                        {formatNumber(totals.totalAmount, 2)}
-                      </td>
+                {totals ? (
+                  <div className='rounded border bg-neutral-50 p-3'>
+                    <div className='text-sm font-medium text-neutral-900'>Totals</div>
+                    <div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-700'>
+                      <div className='tabular-nums'>
+                        <span className='text-neutral-500'>Cnt</span> {totals.totalCount.toLocaleString()}
+                      </div>
+                      <div className='tabular-nums'>
+                        <span className='text-neutral-500'>Hrs</span> {formatNumber(totals.totalHours, decimals)}
+                      </div>
+                      <div className='tabular-nums'>
+                        <span className='text-neutral-500'>Amt</span> {formatNumber(totals.totalAmount, 2)}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className='mt-4 hidden overflow-auto rounded border bg-white sm:block'>
+                <table className='w-full min-w-[520px] text-left text-sm'>
+                  <thead className='border-b bg-neutral-100'>
+                    <tr>
+                      <th className='px-3 py-2 font-medium'>NoteType</th>
+                      <th className='px-3 py-2 font-medium'>Count</th>
+                      <th className='px-3 py-2 font-medium'>Hours</th>
+                      <th className='px-3 py-2 font-medium'>Amount</th>
                     </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {data.rows.map((r) => (
+                      <tr key={r.noteType} className='border-b last:border-b-0'>
+                        <td className='px-3 py-2'>{r.noteType}</td>
+                        <td className='px-3 py-2 tabular-nums'>
+                          {r.count.toLocaleString()}
+                        </td>
+                        <td className='px-3 py-2 tabular-nums'>
+                          {formatNumber(r.totalHours, decimals)}
+                        </td>
+                        <td className='px-3 py-2 tabular-nums'>
+                          {formatNumber(r.totalAmount, 2)}
+                        </td>
+                      </tr>
+                    ))}
+
+                    {totals ? (
+                      <tr className='bg-neutral-50'>
+                        <td className='px-3 py-2 font-medium'>Totals</td>
+                        <td className='px-3 py-2 font-medium tabular-nums'>
+                          {totals.totalCount.toLocaleString()}
+                        </td>
+                        <td className='px-3 py-2 font-medium tabular-nums'>
+                          {formatNumber(totals.totalHours, decimals)}
+                        </td>
+                        <td className='px-3 py-2 font-medium tabular-nums'>
+                          {formatNumber(totals.totalAmount, 2)}
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            </>
           ) : null}
 
           {prefs ? (
