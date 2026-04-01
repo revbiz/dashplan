@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+
+import { formatUsd } from '../../lib/format';
 
 type NoteTypeRow = {
   noteType: string;
@@ -175,10 +177,16 @@ function DonutChart({
   title,
   items,
   valueLabel,
+  valueTextClassName,
+  valueSvgClassName,
+  trackStroke,
 }: {
   title: string;
   items: Array<{ label: string; value: number }>;
   valueLabel: (v: number) => string;
+  valueTextClassName?: string;
+  valueSvgClassName?: string;
+  trackStroke?: string;
 }) {
   const filtered = items.filter((i) => i.value > 0);
   const total = filtered.reduce((s, i) => s + i.value, 0);
@@ -202,7 +210,7 @@ function DonutChart({
               cy={cy}
               r={r}
               fill='none'
-              stroke='#e5e7eb'
+              stroke={trackStroke ?? '#e5e7eb'}
               strokeWidth={stroke}
             />
 
@@ -241,8 +249,8 @@ function DonutChart({
               x={cx}
               y={cy + 16}
               textAnchor='middle'
-              className='fill-neutral-700'
-              style={{ fontSize: 12 }}
+              className={valueSvgClassName ?? 'fill-neutral-700'}
+              style={{ fontSize: 16, fontWeight: 700 }}
             >
               {valueLabel(total)}
             </text>
@@ -262,7 +270,11 @@ function DonutChart({
                 <div className='min-w-0 flex-1 truncate text-sm text-neutral-800'>
                   {it.label}
                 </div>
-                <div className='shrink-0 text-sm tabular-nums text-neutral-700'>
+                <div
+                  className={`shrink-0 text-sm tabular-nums ${
+                    valueTextClassName ?? 'text-neutral-700'
+                  }`}
+                >
                   {valueLabel(it.value)}
                 </div>
               </div>
@@ -281,6 +293,7 @@ export default function ChartsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [noteTypeData, setNoteTypeData] = useState<NoteTypeApiResponse | null>(null);
   const [nameData, setNameData] = useState<NameApiResponse | null>(null);
+  const didAutoRun = useRef(false);
 
   useEffect(() => {
     const p = loadPrefs();
@@ -328,6 +341,13 @@ export default function ChartsPage() {
       setIsLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (didAutoRun.current) return;
+    if (!start || !end) return;
+    didAutoRun.current = true;
+    void run();
+  }, [start, end]);
 
   const noteTypeHoursItems = useMemo(() => {
     if (!noteTypeData || !noteTypeData.ok) return null;
@@ -448,7 +468,10 @@ export default function ChartsPage() {
             <DonutChart
               title='NoteType (Amount)'
               items={noteTypeAmountItems}
-              valueLabel={(v) => formatNumber(v, 2)}
+              valueLabel={(v) => formatUsd(v)}
+              valueTextClassName='text-emerald-700'
+              valueSvgClassName='fill-emerald-700'
+              trackStroke='#059669'
             />
             <div className='lg:col-span-2'>
               <DonutChart

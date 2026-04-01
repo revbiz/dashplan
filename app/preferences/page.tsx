@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 function todayIso() {
   const d = new Date();
@@ -64,6 +65,7 @@ function savePrefs(prefs: DashboardPrefs) {
 }
 
 export default function PreferencesPage() {
+  const router = useRouter();
   const [prefs, setPrefs] = useState<DashboardPrefs | null>(null);
   const [isSaved, setIsSaved] = useState(false);
 
@@ -80,6 +82,7 @@ export default function PreferencesPage() {
     if (!prefs) return;
     savePrefs(prefs);
     setIsSaved(true);
+    router.push('/dashboard');
   }
 
   function onReset() {

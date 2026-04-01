@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+
+import { formatUsd } from '../../lib/format';
 
 type Row = {
   noteType: string;
@@ -167,6 +169,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [nameData, setNameData] = useState<NameApiResponse | null>(null);
+  const didAutoRun = useRef(false);
 
   useEffect(() => {
     const p = loadPrefs();
@@ -223,6 +226,13 @@ export default function DashboardPage() {
       setIsLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (didAutoRun.current) return;
+    if (!start || !end) return;
+    didAutoRun.current = true;
+    void run();
+  }, [start, end]);
 
   const decimals = prefs?.roundingHoursDecimals ?? 2;
 
@@ -334,31 +344,31 @@ export default function DashboardPage() {
 
         {totals ? (
           <section className='grid gap-3 sm:grid-cols-2 md:grid-cols-5'>
-            <div className='rounded border bg-neutral-50 p-4'>
+            <div className='rounded border bg-neutral-50 p-4 text-center sm:text-left'>
               <div className='text-xs text-neutral-600'>Records</div>
               <div className='mt-1 text-lg font-semibold tabular-nums'>
                 {totals.totalCount.toLocaleString()}
               </div>
             </div>
-            <div className='rounded border bg-neutral-50 p-4'>
+            <div className='rounded border bg-neutral-50 p-4 text-center sm:text-left'>
               <div className='text-xs text-neutral-600'>Total Hours</div>
               <div className='mt-1 text-lg font-semibold tabular-nums'>
                 {formatNumber(totals.totalHours, decimals)}
               </div>
             </div>
-            <div className='rounded border bg-neutral-50 p-4'>
+            <div className='rounded border bg-neutral-50 p-4 text-center sm:text-left'>
               <div className='text-xs text-neutral-600'>Billable Hours</div>
               <div className='mt-1 text-lg font-semibold tabular-nums'>
                 {formatNumber(totals.billableHours, decimals)}
               </div>
             </div>
-            <div className='rounded border bg-neutral-50 p-4'>
+            <div className='rounded border bg-neutral-50 p-4 text-center sm:text-left'>
               <div className='text-xs text-neutral-600'>Billable Amount</div>
               <div className='mt-1 text-lg font-semibold tabular-nums'>
-                {formatNumber(totals.totalAmount, 2)}
+                {formatUsd(totals.totalAmount)}
               </div>
             </div>
-            <div className='rounded border bg-neutral-50 p-4'>
+            <div className='rounded border bg-neutral-50 p-4 text-center sm:text-left'>
               <div className='text-xs text-neutral-600'>Avg Hours / Day</div>
               <div className='mt-1 text-lg font-semibold tabular-nums'>
                 {avgHoursPerDay === null
@@ -477,21 +487,39 @@ export default function DashboardPage() {
 
           {data && data.ok ? (
             <>
+              <div className='mt-4'>
+                <div className='text-sm font-medium'>Note Type Summary</div>
+                <div className='mt-1 text-xs text-neutral-600'>
+                  Breakdown of notes by type — total items, total hours, and total amount.
+                </div>
+              </div>
+
               <div className='mt-4 space-y-2 sm:hidden'>
                 {data.rows.map((r) => (
                   <div key={`nt-m-${r.noteType}`} className='rounded border bg-white p-3'>
-                    <div className='truncate text-sm font-medium text-neutral-900'>
-                      {r.noteType}
+                    <div className='flex justify-center'>
+                      <span className='inline-flex w-[15ch] max-w-full items-center justify-center rounded bg-blue-200 px-2 py-1 text-lg font-semibold text-blue-950'>
+                        <span className='truncate text-center'>{r.noteType}</span>
+                      </span>
                     </div>
-                    <div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-700'>
+                    <div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-base text-neutral-700'>
                       <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Cnt</span> {r.count.toLocaleString()}
+                        <span className='text-neutral-500'>Cnt</span>{' '}
+                        <span className='font-semibold'>
+                          {r.count.toLocaleString()}
+                        </span>
                       </div>
                       <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Hrs</span> {formatNumber(r.totalHours, decimals)}
+                        <span className='text-neutral-500'>Hrs</span>{' '}
+                        <span className='font-semibold'>
+                          {formatNumber(r.totalHours, decimals)}
+                        </span>
                       </div>
                       <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Amt</span> {formatNumber(r.totalAmount, 2)}
+                        <span className='text-neutral-500'>Amt</span>{' '}
+                        <span className='font-semibold'>
+                          {formatUsd(r.totalAmount)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -499,16 +527,25 @@ export default function DashboardPage() {
 
                 {totals ? (
                   <div className='rounded border bg-neutral-50 p-3'>
-                    <div className='text-sm font-medium text-neutral-900'>Totals</div>
-                    <div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-700'>
+                    <div className='text-lg font-medium text-neutral-900'>Totals</div>
+                    <div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-base text-neutral-700'>
                       <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Cnt</span> {totals.totalCount.toLocaleString()}
+                        <span className='text-neutral-500'>Cnt</span>{' '}
+                        <span className='font-semibold'>
+                          {totals.totalCount.toLocaleString()}
+                        </span>
                       </div>
                       <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Hrs</span> {formatNumber(totals.totalHours, decimals)}
+                        <span className='text-neutral-500'>Hrs</span>{' '}
+                        <span className='font-semibold'>
+                          {formatNumber(totals.totalHours, decimals)}
+                        </span>
                       </div>
                       <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Amt</span> {formatNumber(totals.totalAmount, 2)}
+                        <span className='text-neutral-500'>Amt</span>{' '}
+                        <span className='font-semibold'>
+                          {formatUsd(totals.totalAmount)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -520,23 +557,27 @@ export default function DashboardPage() {
                   <thead className='border-b bg-neutral-100'>
                     <tr>
                       <th className='px-3 py-2 font-medium'>NoteType</th>
-                      <th className='px-3 py-2 font-medium'>Count</th>
-                      <th className='px-3 py-2 font-medium'>Hours</th>
-                      <th className='px-3 py-2 font-medium'>Amount</th>
+                      <th className='px-3 py-2 font-medium text-right'>Count</th>
+                      <th className='px-3 py-2 font-medium text-right'>Hours</th>
+                      <th className='px-3 py-2 font-medium text-right'>Amount</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.rows.map((r) => (
                       <tr key={r.noteType} className='border-b last:border-b-0'>
-                        <td className='px-3 py-2'>{r.noteType}</td>
-                        <td className='px-3 py-2 tabular-nums'>
+                        <td className='px-3 py-2 text-center'>
+                          <span className='inline-flex w-[15ch] max-w-full items-center justify-center rounded bg-blue-200 px-2 py-1 font-semibold text-blue-950'>
+                            <span className='truncate text-center'>{r.noteType}</span>
+                          </span>
+                        </td>
+                        <td className='px-3 py-2 tabular-nums text-right'>
                           {r.count.toLocaleString()}
                         </td>
-                        <td className='px-3 py-2 tabular-nums'>
+                        <td className='px-3 py-2 tabular-nums text-right'>
                           {formatNumber(r.totalHours, decimals)}
                         </td>
-                        <td className='px-3 py-2 tabular-nums'>
-                          {formatNumber(r.totalAmount, 2)}
+                        <td className='px-3 py-2 tabular-nums text-right'>
+                          {formatUsd(r.totalAmount)}
                         </td>
                       </tr>
                     ))}
@@ -544,14 +585,14 @@ export default function DashboardPage() {
                     {totals ? (
                       <tr className='bg-neutral-50'>
                         <td className='px-3 py-2 font-medium'>Totals</td>
-                        <td className='px-3 py-2 font-medium tabular-nums'>
+                        <td className='px-3 py-2 font-medium tabular-nums text-right'>
                           {totals.totalCount.toLocaleString()}
                         </td>
-                        <td className='px-3 py-2 font-medium tabular-nums'>
+                        <td className='px-3 py-2 font-medium tabular-nums text-right'>
                           {formatNumber(totals.totalHours, decimals)}
                         </td>
-                        <td className='px-3 py-2 font-medium tabular-nums'>
-                          {formatNumber(totals.totalAmount, 2)}
+                        <td className='px-3 py-2 font-medium tabular-nums text-right'>
+                          {formatUsd(totals.totalAmount)}
                         </td>
                       </tr>
                     ) : null}
@@ -571,7 +612,9 @@ export default function DashboardPage() {
         {topNoteTypesByHours && topNoteTypesByAmount && topNamesByHoursForChart ? (
           <section className='grid gap-4 lg:grid-cols-2'>
             <div className='rounded border bg-neutral-50 p-4'>
-              <div className='text-sm font-medium'>Chart: Hours by NoteType</div>
+              <div className='text-lg font-semibold sm:text-sm sm:font-medium'>
+                Chart: Hours by NoteType
+              </div>
               <div className='mt-3 space-y-2'>
                 {(() => {
                   const items = topNoteTypesByHours.map((r) => ({
@@ -583,10 +626,10 @@ export default function DashboardPage() {
                   return items.map((it) => (
                     <div key={`nt-hours-${it.label}`} className='space-y-1'>
                       <div className='flex items-baseline justify-between gap-3'>
-                        <div className='truncate text-xs text-neutral-700'>
+                        <div className='truncate text-base font-medium text-neutral-700 sm:text-xs sm:font-normal'>
                           {it.label}
                         </div>
-                        <div className='shrink-0 text-xs tabular-nums text-neutral-700'>
+                        <div className='shrink-0 text-base font-semibold tabular-nums text-neutral-700 sm:text-xs sm:font-normal'>
                           {formatNumber(it.value, decimals)}
                         </div>
                       </div>
@@ -603,7 +646,9 @@ export default function DashboardPage() {
             </div>
 
             <div className='rounded border bg-neutral-50 p-4'>
-              <div className='text-sm font-medium'>Chart: Amount by NoteType</div>
+              <div className='text-lg font-semibold sm:text-sm sm:font-medium'>
+                Chart: Amount by NoteType
+              </div>
               <div className='mt-3 space-y-2'>
                 {(() => {
                   const items = topNoteTypesByAmount.map((r) => ({
@@ -615,11 +660,11 @@ export default function DashboardPage() {
                   return items.map((it) => (
                     <div key={`nt-amt-${it.label}`} className='space-y-1'>
                       <div className='flex items-baseline justify-between gap-3'>
-                        <div className='truncate text-xs text-neutral-700'>
+                        <div className='truncate text-base font-medium text-neutral-700 sm:text-xs sm:font-normal'>
                           {it.label}
                         </div>
-                        <div className='shrink-0 text-xs tabular-nums text-neutral-700'>
-                          {formatNumber(it.value, 2)}
+                        <div className='shrink-0 text-base font-semibold tabular-nums text-neutral-700 sm:text-xs sm:font-normal'>
+                          {formatUsd(it.value)}
                         </div>
                       </div>
                       <div className='h-2 w-full rounded bg-neutral-200'>
@@ -687,21 +732,38 @@ export default function DashboardPage() {
               <div className='mt-3 space-y-2 sm:hidden'>
                 {topNamesByHours.map((r) => (
                   <div key={`hours-m-${r.name}`} className='rounded border bg-white p-3'>
-                    <div className='truncate text-sm font-medium text-neutral-900'>
+                    <div className='truncate text-lg font-medium text-neutral-900'>
                       {r.name}
                     </div>
-                    <div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-700'>
-                      <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Hrs</span> {formatNumber(r.totalHours, decimals)}
+                    <div className='mt-2 space-y-1 text-base text-neutral-700'>
+                      <div className='grid grid-cols-2 gap-x-4'>
+                        <div className='tabular-nums'>
+                          <span className='text-neutral-500'>Hrs</span>{' '}
+                          <span className='font-semibold'>
+                            {formatNumber(r.totalHours, decimals)}
+                          </span>
+                        </div>
+                        <div className='tabular-nums text-right'>
+                          <span className='text-neutral-500'>Bill</span>{' '}
+                          <span className='font-semibold'>
+                            {formatNumber(r.billableHours, decimals)}
+                          </span>
+                        </div>
                       </div>
-                      <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Cnt</span> {r.count.toLocaleString()}
-                      </div>
-                      <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Bill</span> {formatNumber(r.billableHours, decimals)}
-                      </div>
-                      <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Amt</span> {formatNumber(r.totalAmount, 2)}
+
+                      <div className='grid grid-cols-2 gap-x-4'>
+                        <div className='tabular-nums'>
+                          <span className='text-neutral-500'>Amt</span>{' '}
+                          <span className='font-semibold'>
+                            {formatUsd(r.totalAmount)}
+                          </span>
+                        </div>
+                        <div className='tabular-nums text-right'>
+                          <span className='text-neutral-500'>Cnt</span>{' '}
+                          <span className='font-semibold'>
+                            {r.count.toLocaleString()}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -713,27 +775,27 @@ export default function DashboardPage() {
                   <thead className='border-b bg-neutral-100'>
                     <tr>
                       <th className='px-3 py-2 font-medium'>Name</th>
-                      <th className='px-3 py-2 font-medium'>Hours</th>
-                      <th className='px-3 py-2 font-medium'>Count</th>
-                      <th className='px-3 py-2 font-medium'>Billable Hours</th>
-                      <th className='px-3 py-2 font-medium'>Amount</th>
+                      <th className='px-3 py-2 font-medium text-right'>Hours</th>
+                      <th className='px-3 py-2 font-medium text-right'>Count</th>
+                      <th className='px-3 py-2 font-medium text-right'>Billable Hours</th>
+                      <th className='px-3 py-2 font-medium text-right'>Amount</th>
                     </tr>
                   </thead>
                   <tbody>
                     {topNamesByHours.map((r) => (
                       <tr key={`hours-${r.name}`} className='border-b last:border-b-0'>
                         <td className='px-3 py-2'>{r.name}</td>
-                        <td className='px-3 py-2 tabular-nums'>
+                        <td className='px-3 py-2 tabular-nums text-right'>
                           {formatNumber(r.totalHours, decimals)}
                         </td>
-                        <td className='px-3 py-2 tabular-nums'>
+                        <td className='px-3 py-2 tabular-nums text-right'>
                           {r.count.toLocaleString()}
                         </td>
-                        <td className='px-3 py-2 tabular-nums'>
+                        <td className='px-3 py-2 tabular-nums text-right'>
                           {formatNumber(r.billableHours, decimals)}
                         </td>
-                        <td className='px-3 py-2 tabular-nums'>
-                          {formatNumber(r.totalAmount, 2)}
+                        <td className='px-3 py-2 tabular-nums text-right'>
+                          {formatUsd(r.totalAmount)}
                         </td>
                       </tr>
                     ))}
@@ -747,21 +809,38 @@ export default function DashboardPage() {
               <div className='mt-3 space-y-2 sm:hidden'>
                 {topNamesByAmount.map((r) => (
                   <div key={`amount-m-${r.name}`} className='rounded border bg-white p-3'>
-                    <div className='truncate text-sm font-medium text-neutral-900'>
+                    <div className='truncate text-lg font-medium text-neutral-900'>
                       {r.name}
                     </div>
-                    <div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-700'>
-                      <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Amt</span> {formatNumber(r.totalAmount, 2)}
+                    <div className='mt-2 space-y-1 text-base text-neutral-700'>
+                      <div className='grid grid-cols-2 gap-x-4'>
+                        <div className='tabular-nums'>
+                          <span className='text-neutral-500'>Hrs</span>{' '}
+                          <span className='font-semibold'>
+                            {formatNumber(r.totalHours, decimals)}
+                          </span>
+                        </div>
+                        <div className='tabular-nums text-right'>
+                          <span className='text-neutral-500'>Bill</span>{' '}
+                          <span className='font-semibold'>
+                            {formatNumber(r.billableHours, decimals)}
+                          </span>
+                        </div>
                       </div>
-                      <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Hrs</span> {formatNumber(r.totalHours, decimals)}
-                      </div>
-                      <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Cnt</span> {r.count.toLocaleString()}
-                      </div>
-                      <div className='tabular-nums'>
-                        <span className='text-neutral-500'>Bill</span> {formatNumber(r.billableHours, decimals)}
+
+                      <div className='grid grid-cols-2 gap-x-4'>
+                        <div className='tabular-nums'>
+                          <span className='text-neutral-500'>Amt</span>{' '}
+                          <span className='font-semibold'>
+                            {formatUsd(r.totalAmount)}
+                          </span>
+                        </div>
+                        <div className='tabular-nums text-right'>
+                          <span className='text-neutral-500'>Cnt</span>{' '}
+                          <span className='font-semibold'>
+                            {r.count.toLocaleString()}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -773,27 +852,27 @@ export default function DashboardPage() {
                   <thead className='border-b bg-neutral-100'>
                     <tr>
                       <th className='px-3 py-2 font-medium'>Name</th>
-                      <th className='px-3 py-2 font-medium'>Hours</th>
-                      <th className='px-3 py-2 font-medium'>Count</th>
-                      <th className='px-3 py-2 font-medium'>Billable Hours</th>
-                      <th className='px-3 py-2 font-medium'>Amount</th>
+                      <th className='px-3 py-2 font-medium text-right'>Hours</th>
+                      <th className='px-3 py-2 font-medium text-right'>Count</th>
+                      <th className='px-3 py-2 font-medium text-right'>Billable Hours</th>
+                      <th className='px-3 py-2 font-medium text-right'>Amount</th>
                     </tr>
                   </thead>
                   <tbody>
                     {topNamesByAmount.map((r) => (
                       <tr key={`amount-${r.name}`} className='border-b last:border-b-0'>
                         <td className='px-3 py-2'>{r.name}</td>
-                        <td className='px-3 py-2 tabular-nums'>
+                        <td className='px-3 py-2 tabular-nums text-right'>
                           {formatNumber(r.totalHours, decimals)}
                         </td>
-                        <td className='px-3 py-2 tabular-nums'>
+                        <td className='px-3 py-2 tabular-nums text-right'>
                           {r.count.toLocaleString()}
                         </td>
-                        <td className='px-3 py-2 tabular-nums'>
+                        <td className='px-3 py-2 tabular-nums text-right'>
                           {formatNumber(r.billableHours, decimals)}
                         </td>
-                        <td className='px-3 py-2 tabular-nums'>
-                          {formatNumber(r.totalAmount, 2)}
+                        <td className='px-3 py-2 tabular-nums text-right'>
+                          {formatUsd(r.totalAmount)}
                         </td>
                       </tr>
                     ))}

@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import { formatUsd } from '../../lib/format';
 
 type DashboardPrefs = {
   defaultStart: string;
@@ -128,6 +130,7 @@ export default function ReportsNoteTypePage() {
   const [displayMode, setDisplayMode] = useState<'weeks' | 'summary'>('weeks');
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<ApiResponse | null>(null);
+  const didAutoRun = useRef(false);
 
   useEffect(() => {
     const p = loadPrefs();
@@ -185,6 +188,13 @@ export default function ReportsNoteTypePage() {
       setIsLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (didAutoRun.current) return;
+    if (!start || !end) return;
+    didAutoRun.current = true;
+    void run();
+  }, [start, end]);
 
   const sections = useMemo(() => {
     if (!data || !data.ok) return null;
@@ -305,56 +315,89 @@ export default function ReportsNoteTypePage() {
                   </div>
 
                   <div className='grid grid-cols-3 gap-3 text-sm'>
-                    <div>
+                    <div className='w-[10ch] justify-self-end text-right'>
                       <div className='text-xs text-neutral-600'>Count</div>
-                      <div className='tabular-nums'>
+                      <div className='tabular-nums text-base font-semibold text-neutral-900'>
                         {s.totals.count.toLocaleString()}
                       </div>
                     </div>
-                    <div>
+                    <div className='w-[10ch] justify-self-end text-right'>
                       <div className='text-xs text-neutral-600'>Hours</div>
-                      <div className='tabular-nums'>
+                      <div className='tabular-nums text-base font-semibold text-neutral-900'>
                         {formatNumber(s.totals.totalHours, decimals)}
                       </div>
                     </div>
-                    <div>
+                    <div className='w-[10ch] justify-self-end text-right'>
                       <div className='text-xs text-neutral-600'>Amount</div>
-                      <div className='tabular-nums'>
-                        {formatMoney(s.totals.totalAmount)}
+                      <div className='tabular-nums text-base font-semibold text-neutral-900'>
+                        {formatUsd(s.totals.totalAmount)}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {displayMode === 'weeks' ? (
-                  <div className='overflow-x-auto'>
-                    <table className='w-full min-w-[720px] border-collapse'>
-                      <thead>
-                        <tr className='border-b bg-white text-left text-sm'>
-                          <th className='px-4 py-2 font-medium'>Week</th>
-                          <th className='px-4 py-2 font-medium'>Count</th>
-                          <th className='px-4 py-2 font-medium'>Hours</th>
-                          <th className='px-4 py-2 font-medium'>Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {s.weeks.map((w) => (
-                          <tr key={`${s.noteType}-${w.weekStartIso}`} className='border-b text-sm'>
-                            <td className='px-4 py-2 tabular-nums'>{w.label}</td>
-                            <td className='px-4 py-2 tabular-nums'>
-                              {w.count.toLocaleString()}
-                            </td>
-                            <td className='px-4 py-2 tabular-nums'>
-                              {formatNumber(w.totalHours, decimals)}
-                            </td>
-                            <td className='px-4 py-2 tabular-nums'>
-                              {formatMoney(w.totalAmount)}
-                            </td>
+                  <>
+                    <div className='space-y-2 p-3 sm:hidden'>
+                      {s.weeks.map((w) => (
+                        <div
+                          key={`${s.noteType}-m-${w.weekStartIso}`}
+                          className='rounded border bg-white p-3'
+                        >
+                          <div className='tabular-nums text-base font-semibold text-neutral-900'>
+                            {w.label}
+                          </div>
+                          <div className='mt-2 grid grid-cols-3 gap-x-3 text-base text-neutral-700'>
+                            <div className='tabular-nums'>
+                              <span className='font-semibold'>{formatUsd(w.totalAmount)}</span>
+                            </div>
+                            <div className='tabular-nums text-right'>
+                              <span className='text-neutral-500'>Hrs</span>{' '}
+                              <span className='font-semibold'>
+                                {formatNumber(w.totalHours, decimals)}
+                              </span>
+                            </div>
+                            <div className='tabular-nums text-right'>
+                              <span className='text-neutral-500'>Cnt</span>{' '}
+                              <span className='font-semibold'>{w.count.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className='hidden overflow-x-auto sm:block'>
+                      <table className='w-full min-w-[720px] border-collapse'>
+                        <thead>
+                          <tr className='border-b bg-white text-left text-sm'>
+                            <th className='px-4 py-2 font-medium'>Week</th>
+                            <th className='px-4 py-2 font-medium text-right'>Count</th>
+                            <th className='px-4 py-2 font-medium text-right'>Hours</th>
+                            <th className='px-4 py-2 font-medium text-right'>Amount</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {s.weeks.map((w) => (
+                            <tr
+                              key={`${s.noteType}-${w.weekStartIso}`}
+                              className='border-b text-sm'
+                            >
+                              <td className='px-4 py-2 tabular-nums'>{w.label}</td>
+                              <td className='px-4 py-2 tabular-nums text-right'>
+                                {w.count.toLocaleString()}
+                              </td>
+                              <td className='px-4 py-2 tabular-nums text-right'>
+                                {formatNumber(w.totalHours, decimals)}
+                              </td>
+                              <td className='px-4 py-2 tabular-nums text-right'>
+                                {formatUsd(w.totalAmount)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 ) : null}
               </section>
             ))}
